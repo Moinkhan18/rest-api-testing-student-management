@@ -1,0 +1,526 @@
+{
+  "info": {
+    "name": "Student Management System – REST API",
+    "_postman_id": "sms-api-collection-v1",
+    "description": "Comprehensive Postman collection covering CRUD operations, error handling, validation, and regression scenarios for the Student Management System REST API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "student_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔎 Health Check",
+      "item": [
+        {
+          "name": "GET /health – Server is alive",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status field is ok', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "});",
+                  "pm.test('Response has timestamp', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('timestamp');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "📚 GET Students",
+      "item": [
+        {
+          "name": "GET /api/students – All students",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/students"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is JSON', () => pm.response.to.be.json);",
+                  "pm.test('Has students array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('students').that.is.an('array');",
+                  "});",
+                  "pm.test('Count matches list length', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.count).to.eql(json.students.length);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/students?course=Computer Science – Filter by course",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/students?course=Computer Science",
+              "host": ["{{base_url}}"],
+              "path": ["api", "students"],
+              "query": [{ "key": "course", "value": "Computer Science" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('All results match course filter', () => {",
+                  "  const students = pm.response.json().students;",
+                  "  students.forEach(s => {",
+                  "    pm.expect(s.course.toLowerCase()).to.eql('computer science');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/students?course=Astrophysics – Filter returns empty",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/students?course=Astrophysics",
+              "host": ["{{base_url}}"],
+              "path": ["api", "students"],
+              "query": [{ "key": "course", "value": "Astrophysics" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Count is 0 for unknown course', () => {",
+                  "  pm.expect(pm.response.json().count).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/students/1 – Student by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/students/{{student_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Student has required fields', () => {",
+                  "  const s = pm.response.json();",
+                  "  ['id','name','email','age','course','grade'].forEach(f => {",
+                  "    pm.expect(s).to.have.property(f);",
+                  "  });",
+                  "});",
+                  "pm.test('ID in response matches requested ID', () => {",
+                  "  pm.expect(pm.response.json().id).to.eql(parseInt(pm.variables.get('student_id')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/students/99999 – Student not found (404)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/students/99999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error message present', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('error');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "➕ POST – Create Student",
+      "item": [
+        {
+          "name": "POST /api/students – Create valid student (201)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/students",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Moin Khan\",\n  \"email\": \"moin@example.com\",\n  \"age\": 22,\n  \"course\": \"Computer Science\",\n  \"grade\": \"A\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Response has id', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('id');",
+                  "  pm.collectionVariables.set('new_student_id', json.id);",
+                  "});",
+                  "pm.test('Response has enrolled_at', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('enrolled_at');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/students – Missing required field (422)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/students",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"missing@example.com\",\n  \"age\": 21\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422', () => pm.response.to.have.status(422));",
+                  "pm.test('Response has error and details', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('error');",
+                  "  pm.expect(json).to.have.property('details').that.is.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/students – Invalid email format (422)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/students",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad Email\",\n  \"email\": \"not-an-email\",\n  \"age\": 21,\n  \"course\": \"CS\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/students – Invalid age (422)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/students",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bad Age\",\n  \"email\": \"age@example.com\",\n  \"age\": -5,\n  \"course\": \"CS\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/students – Empty body (400)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/students",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "✏️ PUT – Full Update",
+      "item": [
+        {
+          "name": "PUT /api/students/1 – Full update (200)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/api/students/{{student_id}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Johnson Updated\",\n  \"email\": \"alice.updated@example.com\",\n  \"age\": 23,\n  \"course\": \"Computer Science\",\n  \"grade\": \"A+\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Name updated', () => {",
+                  "  pm.expect(pm.response.json().name).to.eql('Alice Johnson Updated');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /api/students/99999 – Not found (404)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/api/students/99999",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ghost\",\n  \"email\": \"ghost@example.com\",\n  \"age\": 21,\n  \"course\": \"CS\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /api/students/1 – Missing required fields (422)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/api/students/{{student_id}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Only Name\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🩹 PATCH – Partial Update",
+      "item": [
+        {
+          "name": "PATCH /api/students/1 – Update grade only (200)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/students/{{student_id}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"grade\": \"A+\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Grade is A+', () => {",
+                  "  pm.expect(pm.response.json().grade).to.eql('A+');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/students/99999 – Not found (404)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/students/99999",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"grade\": \"B\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/students/1 – Invalid age (422)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/api/students/{{student_id}}",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"age\": 999\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 422', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🗑️ DELETE Student",
+      "item": [
+        {
+          "name": "DELETE /api/students/:id – Delete existing student (200)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/students/{{new_student_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Success message present', () => {",
+                  "  pm.expect(pm.response.json()).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/students/99999 – Not found (404)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/students/99999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🔁 Regression Scenarios",
+      "item": [
+        {
+          "name": "GET after DELETE – Should return 404",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/students/{{new_student_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Deleted student returns 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown endpoint – Should return 404",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/nonexistent"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
