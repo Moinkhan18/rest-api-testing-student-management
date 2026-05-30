@@ -285,9 +285,5 @@ tests/test_students_api.py::TestRegressionScenarios::test_total_count_decrements
 
 ---
 
-## Author
 
-**Moin Khan**
-BE Computer Science & Engineering
-GitHub: [github.com/Moinkhan18](https://github.com/Moinkhan18)
-LinkedIn: [linkedin.com/in/mohammad-moin-khan-036403223](https://linkedin.com/in/mohammad-moin-khan-036403223)
+
